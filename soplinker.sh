@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # local definitions
 rport=8908
 lport=3908
@@ -41,7 +39,7 @@ do
 	#-- Check if nothin is entered
 	[ -z "$url" ] && continue;
 	#-- Retrieve webpage and save it in a temp file
-	wget ${url} -O- 2> /dev/null | xsltproc --html sop.xsl - 2> /dev/null | html2text -utf8 | tee C | tail -n +2 | tr -cd '[A-Za-z0-9\n:/,.-]' > $$
+	wget ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text > $$
 	#-- Let user select a SOP link
 	printf "\nSelect Sopcast link to stream into VLC player (or '0' to quit):\n"
 	if [ $(cat $$ | wc -l) -gt 0 ]; then
@@ -54,10 +52,9 @@ do
 		echo "and open http://<ip of this host>:$rport/tv.asf network stream. To quit broadcasting you need to hit Ctrl+C to start over or quit."
 		sp-sc-auth $(echo ${temp[$((result-1))]} | cut -d"," -f1) $lport $rport > /dev/null || { echo "" && continue; }
 		unset temp	
-	fi	
+	fi
 done
-
-
+	
 #-- Finalize
 [ $result -eq 0 ] || echo ""
 [ -f $$ ] && rm $$ 
