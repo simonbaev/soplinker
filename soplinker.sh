@@ -34,6 +34,18 @@ YesNo() {
 	done
 }
 #--
+isInstalled() {
+	which "$1" > /dev/null || {
+		echo "Please install '$1' and re-run the script." 1>&2
+		return 1;
+	}
+	return 0
+}
+# Sanity check
+isInstalled "html2text"  || exit 1
+isInstalled "sp-sc-auth" || exit 2
+isInstalled "xsltproc"   || exit 3
+#--
 while read -p "Enter URL of a webpage with Sopcast links (Ctrl+D to quit): " url
 do
 	#-- Check if nothin is entered
@@ -50,7 +62,7 @@ do
 		echo "This process may fail if link is no longer valid (e.g. banned)."
 		echo "In case of success (you continue seeing this message) you need to start VLC (or any other) player"
 		echo "and open http://<ip of this host>:$rport/tv.asf network stream. To quit broadcasting you need to hit Ctrl+C to start over or quit."
-		sp-sc-auth $(echo ${temp[$((result-1))]} | cut -d"," -f1) $lport $rport > /dev/null || { echo "" && continue; }
+		sp-sc-auth $(echo ${temp[$((result-1))]}) $lport $rport > /dev/null || { echo "" && continue; }
 		unset temp	
 	fi
 done
