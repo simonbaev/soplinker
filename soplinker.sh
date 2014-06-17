@@ -1,5 +1,5 @@
-rport=8908
-lport=3908
+port=8908
+SW=$(expr $(tput cols) - 5)
 #--
 selectItem() {
 	declare -a array=("${!1}")
@@ -60,15 +60,23 @@ do
 	printf "\nSelect Sopcast link to stream into VLC player (Ctrl+C to quit):\n"
 	if [ $(cat $$ | wc -l) -gt 0 ]; then
 		temp=($(cat $$))
-		printf "%2d. Auto selection (try all one by one to find good one).\n" 0
+		rm -rf $$ > /dev/null
+		printf "%2d. Auto selection (start from the frst to find a good one).\n" "0"
 		result=$(selectItem temp[@])
+		echo "Starting Sopcast broadcaster"
 		if [ $result -eq 0 ]; then 
+			echo "If you see the same link for longer than 5 seconds it is a good change that link is working."
+			echo "In this case open http://<ip of this host>:$port/tv.asf network streami in your favorite player."
+			for((i=0;i<${#temp[@]};i++)); do
+				printf "\r%${SW}s\rTrying: [%2d/%2d] %s..." "" "$((i+1))" "${#temp[@]}" "${temp[i]}" 
+				sp-sc-auth $(echo ${temp[$i]}) 0 $port 1> /dev/null 2> /dev/null || { continue; }
+			done	
+			echo ""
 		else
-			echo "Starting Sopcast broadcaster..."
 			echo "This process may fail if link is no longer valid (e.g. banned)."
 			echo "In case of success (you continue seeing this message) you need to start VLC (or any other) player"
-			echo "and open http://<ip of this host>:$rport/tv.asf network stream. To quit broadcasting you need to hit Ctrl+C to start over or quit."
-			echo "sp-sc-auth $(echo ${temp[$((result-1))]}) $lport $rport > /dev/null" || { echo "" && continue; }
+			echo "and open http://<ip of this host>:$port/tv.asf network stream. To quit broadcasting you need to hit Ctrl+C to start over or quit."
+			sp-sc-auth $(echo ${temp[$((result-1))]}) 0 $port 1> /dev/null 2> /dev/null || { echo "" && continue; }
 		fi
 		unset temp	
 	fi
@@ -76,4 +84,3 @@ done
 	
 #-- Finalize
 [ $result -eq 0 ] || echo ""
-[ -f $$ ] && rm $$ 
