@@ -1,6 +1,22 @@
-port=8908
+#!/bin/bash
+
+# SHFLAGS related
+#-----------------
+[ ! -f shflags ] && wget -q http://shflags.googlecode.com/svn/trunk/source/1.0/src/shflags
+#-- source shflags from current directory
+. ./shflags
+DEFINE_boolean 'verbose' false 'enable verbose output' 'v'
+DEFINE_integer 'port' 8908 'port number to be used video streaming' 'p'
+#-- parse the command-line
+FLAGS "$@" || exit 1
+eval set -- "${FLAGS_ARGV}"
+
+# Local variables
+#-----------------
 SW=$(expr $(tput cols) - 5)
-#--
+
+# Functions
+#-----------
 selectItem() {
 	declare -a array=("${!1}")
 	if	[ ${#array[@]} -eq 0 ]; then
@@ -66,17 +82,25 @@ do
 		echo "Starting Sopcast broadcaster"
 		if [ $result -eq 0 ]; then 
 			echo "If you see the same link for longer than 5 seconds it is a good change that link is working."
-			echo "In this case open http://<ip of this host>:$port/tv.asf network streami in your favorite player."
+			echo "In this case open http://<ip of this host>:$port/tv.asf network stream in your favorite player."
 			for((i=0;i<${#temp[@]};i++)); do
 				printf "\r%${SW}s\rTrying: [%2d/%2d] %s..." "" "$((i+1))" "${#temp[@]}" "${temp[i]}" 
-				sp-sc-auth $(echo ${temp[$i]}) 0 $port 1> /dev/null 2> /dev/null || { continue; }
+				if [ ${FLAGS_verbose} -eq ${FLAGS_FALSE} ]; then 
+					sp-sc-auth $(echo ${temp[$i]}) 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { continue; }
+				else
+					sp-sc-auth $(echo ${temp[$i]}) 0 "${FLAGS_port}" || { continue; }
+				fi
 			done	
 			echo ""
 		else
 			echo "This process may fail if link is no longer valid (e.g. banned)."
 			echo "In case of success (you continue seeing this message) you need to start VLC (or any other) player"
 			echo "and open http://<ip of this host>:$port/tv.asf network stream. To quit broadcasting you need to hit Ctrl+C to start over or quit."
-			sp-sc-auth $(echo ${temp[$((result-1))]}) 0 $port 1> /dev/null 2> /dev/null || { echo "" && continue; }
+			if [ ${FLAGS_verbose} -eq ${FLAGS_FALSE} ]; then 
+				sp-sc-auth $(echo ${temp[$((result-1))]}) 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { echo "" && continue; }
+			else
+				sp-sc-auth $(echo ${temp[$((result-1))]}) 0 "${FLAGS_port}" || { echo "" && continue; }
+			fi
 		fi
 		unset temp	
 	fi
