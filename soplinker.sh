@@ -6,6 +6,7 @@
 #-- source shflags from current directory
 . ./shflags
 DEFINE_boolean 'verbose' false 'enable verbose output' 'v'
+DEFINE_boolean 'autoplay' false 'autostart video player' 'a'
 DEFINE_integer 'port' 8908 'port number to be used video streaming' 'p'
 #-- parse the command-line
 FLAGS "$@" || exit 1
@@ -68,13 +69,14 @@ isInstalled "wget"			|| exit 4
 
 # Main loop
 #-----------
-while true
+flag=0;
+while [ $flag -eq 0 ]
 do
 	#-- Retrieve webpage and save it in a temp file
-	wget --no-cache ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text > $$
+	wget --no-cache ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text | uniq > $$
 	#-- Let user select a SOP link
-	printf "\nSelect Sopcast link to stream into VLC player (Ctrl+C to quit):\n"
 	if [ $(cat $$ | wc -l) -gt 0 ]; then
+		printf "\nSelect Sopcast link to stream out (Ctrl+C to quit):\n"
 		temp=($(cat $$))
 		rm -rf $$ > /dev/null
 		printf "%2d. Auto selection (start from the frst to find a good one).\n" "0"
@@ -83,28 +85,37 @@ do
 		if [ $result -eq 0 ]; then 
 			echo "If you see the same link for longer than 5 seconds it is a good change that link is working."
 			echo "In this case open http://<ip of this host>:$port/tv.asf network stream in your favorite player."
+			#trap 'kill -KILL $(ps ax | grep -v grep | grep "sp-sc-auth sop..* 0 ${FLAGS_port}); break' INT
 			for((i=0;i<${#temp[@]};i++)); do
 				printf "\r%${SW}s\rTrying: [%2d/%2d] %s..." "" "$((i+1))" "${#temp[@]}" "${temp[i]}" 
 				if [ ${FLAGS_verbose} -eq ${FLAGS_FALSE} ]; then 
-					sp-sc-auth $(echo ${temp[$i]}) 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { continue; }
+					sp-sc-auth "${temp[$i]}" 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { continue; }
 				else
-					sp-sc-auth $(echo ${temp[$i]}) 0 "${FLAGS_port}" || { continue; }
+					sp-sc-auth "${temp[$i]}" 0 "${FLAGS_port}" || { continue; }
 				fi
-			done	
+			done
 			echo ""
 		else
 			echo "This process may fail if link is no longer valid (e.g. banned)."
 			echo "In case of success (you continue seeing this message) you need to start VLC (or any other) player"
 			echo "and open http://<ip of this host>:$port/tv.asf network stream. To quit broadcasting you need to hit Ctrl+C to start over or quit."
+			#trap 'echo boom; echo kill -KILL $(ps ax | grep -v grep | grep "sp-sc-auth sop..* 0 ${FLAGS_port}" | cut -d" " -f1)' INT
+			#trap 'echo "-------------->"; ps ax | grep -v grep | grep "sp-sc-auth"' INT
 			if [ ${FLAGS_verbose} -eq ${FLAGS_FALSE} ]; then 
-				sp-sc-auth $(echo ${temp[$((result-1))]}) 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { echo "" && continue; }
+				sp-sc-auth "${temp[$((result-1))]}" 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { echo "" && continue; }
 			else
-				sp-sc-auth $(echo ${temp[$((result-1))]}) 0 "${FLAGS_port}" || { echo "" && continue; }
+				sp-sc-auth "${temp[$((result-1))]}" 0 "${FLAGS_port}" || { echo "" && continue; }
 			fi
+			#trap 'flag=1' INT				
 		fi
 		unset temp	
+	else
+		echo "Specified webpage, i.e '$url' doesn't seem to contain sopcast links." 1>&2
+		echo "Would you like to try it again? [y/N]:" 1>&2
+		YesNo 1 || break
 	fi
 done
 	
 #-- Finalize
-[ $result -eq 0 ] || echo ""
+echo ""
+
