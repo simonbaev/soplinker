@@ -28,7 +28,7 @@ selectItem() {
 		done
 		while(true); do
 			read -p "--> " x >&2
-			[ $x -eq 99 ] && return 1
+			[ -z "$x" ] && continue
 			echo ${x} | grep -E '^[0-9]+$' > /dev/null && [ ${x} -ge 0 ] && [ ${x} -le ${#array[@]} ] && echo ${x} && break
 			echo "Error: Incorrect input, try again..." >&2
 		done
@@ -67,10 +67,10 @@ if [ $# -lt 1 ]; then
 	exit 10
 fi
 url="$1"
-isInstalled "html2text"		|| exit 1
-isInstalled "sp-sc-auth"	 || exit 2
-isInstalled "xsltproc"		 || exit 3
-isInstalled "wget"				 || exit 4
+isInstalled "html2text"	 || exit 1
+isInstalled "sp-sc-auth"	|| exit 2
+isInstalled "xsltproc"	  || exit 3
+isInstalled "wget"			|| exit 4
 
 # Main loop
 #-----------
@@ -88,11 +88,9 @@ do
 		rm -rf $$ > /dev/null
 		printf "%2d. Auto selection (start from the frst to find a good one).\n" "0"
 		result=$(selectItem temp[@]) || break
-		echo "Starting Sopcast broadcaster"
+		echo "Open http://<ip of this host>:$port/tv.asf network stream in your favorite media player."
 		if [ $result -eq 0 ]; then
-			echo "If you see the same link for longer than 5 seconds it is a good change that link is working."
-			echo "In this case open http://<ip of this host>:$port/tv.asf network stream in your favorite player."
-			#trap 'kill -KILL $(ps ax | grep -v grep | grep "sp-sc-auth sop..* 0 ${FLAGS_port}); break' INT
+			echo "Hit Ctrl+\ and then Ctrl+C to enforce channel switch, Hit Ctrl+C to stop streaming."
 			trap 'continue' QUIT
 			trap 'break'    INT
 			for((i=0;i<${#temp[@]};i++)); do
@@ -104,19 +102,13 @@ do
 				fi
 			done
 			trap - INT QUIT
-			echo ""
 		else
-			echo "This process may fail if link is no longer valid (e.g. banned)."
-			echo "In case of success (you continue seeing this message) you need to start VLC (or any other) player"
-			echo "and open http://<ip of this host>:$port/tv.asf network stream. To quit broadcasting you need to hit Ctrl+C to start over or quit."
-			#trap 'echo boom; echo kill -KILL $(ps ax | grep -v grep | grep "sp-sc-auth sop..* 0 ${FLAGS_port}" | cut -d" " -f1)' INT
-			#trap 'kill -9 $(pgrep sp-sc-auth)' QUIT
+			echo "Hit Ctrl+C to stop streaming and see list of links again."
 			if [ ${FLAGS_verbose} -eq ${FLAGS_FALSE} ]; then
 				sp-sc-auth "${temp[$((result-1))]}" 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { echo "" && continue; }
 			else
 				sp-sc-auth "${temp[$((result-1))]}" 0 "${FLAGS_port}" || { echo "" && continue; }
 			fi
-			#trap - QUIT
 		fi
 		unset temp
 	else
