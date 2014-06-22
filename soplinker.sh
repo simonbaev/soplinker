@@ -83,7 +83,7 @@ do
 	wget --no-cache ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text | uniq > $$
 	#-- Let user select a SOP link
 	if [ $(cat $$ | wc -l) -gt 0 ]; then
-		printf "\nSelect Sopcast link to stream out (Ctrl+C to quit):\n"
+		printf "Select Sopcast link to stream out (Ctrl+C to quit):\n"
 		temp=($(cat $$))
 		rm -rf $$ > /dev/null
 		printf "%2d. Auto selection (start from the frst to find a good one).\n" "0"
@@ -96,9 +96,9 @@ do
 			for((i=0;i<${#temp[@]};i++)); do
 				printf "\r%${SW}s\rTrying: [%2d/%2d] %s..." "" "$((i+1))" "${#temp[@]}" "${temp[i]}"
 				if [ ${FLAGS_verbose} -eq ${FLAGS_FALSE} ]; then
-					sp-sc-auth "${temp[$i]}" 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null || { continue; }
+					sp-sc-auth "${temp[$i]}" 0 "${FLAGS_port}" 1> /dev/null 2> /dev/null
 				else
-					sp-sc-auth "${temp[$i]}" 0 "${FLAGS_port}" || { continue; }
+					sp-sc-auth "${temp[$i]}" 0 "${FLAGS_port}"
 				fi
 			done
 			trap - INT QUIT
