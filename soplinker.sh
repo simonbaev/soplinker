@@ -8,6 +8,7 @@
 DEFINE_boolean 'verbose' false 'enable verbose output' 'v'
 DEFINE_boolean 'autoplay' false 'autostart video player' 'a'
 DEFINE_integer 'port' 8908 'port number to be used video streaming' 'p'
+FLAGS_HELP="USAGE: $(basename $0) [flags] <URL of a webpage with sopcast links>"
 #-- parse the command-line
 FLAGS "$@" || exit 1
 eval set -- "${FLAGS_ARGV}"
@@ -56,21 +57,25 @@ isInstalled() {
 	}
 	return 0
 }
-#--
-trapHandler() {
-	pgrep sp-sc-auth
-}
 # Sanity check
 #--------------
-if [ $# -lt 1 ]; then
-	echo "Usage: $(basename $0) <URL of a webpage with sopcast links>" 1>&2
+#-- Check for the presence of URL
+if [ $(echo "$@" | awk -F "[ ]*--[ ]*" '{print $2}' | awk '{print NF}') -lt 1 ]; then
+	flags_help
 	exit 10
 fi
 url="$1"
-isInstalled "html2text"	 || exit 1
-isInstalled "sp-sc-auth"	|| exit 2
-isInstalled "xsltproc"	  || exit 3
-isInstalled "wget"			|| exit 4
+#-- Check for the availability of the port to be used by sp-sc-auth
+if lsof -i :${FLAGS_port} > /dev/null; then
+	echo "Port '${FLAGS_port}' is in use by '$(lsof -i :${FLAGS_port} | tail -n +2 | awk '{printf "%s (%s)\n",$1,$2}')' process." 1>&2
+	exit 20
+fi
+#-- Check for the presence of necessary utils
+isInstalled "html2text"	   || exit 11
+isInstalled "sp-sc-auth"	|| exit 12
+isInstalled "xsltproc"	   || exit 13
+isInstalled "wget"			|| exit 14
+isInstalled "lsof"         || exit 15
 
 # Main loop
 #-----------
@@ -83,14 +88,14 @@ do
 	wget --no-cache ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text | uniq > $$
 	#-- Let user select a SOP link
 	if [ $(cat $$ | wc -l) -gt 0 ]; then
-		printf "Select Sopcast link to stream out (Ctrl+C to quit):\n"
+		printf "Select Sopcast link to stream out (hit <Ctrl+C> to quit):\n"
 		temp=($(cat $$))
 		rm -rf $$ > /dev/null
 		printf "%2d. Auto selection (start from the frst to find a good one).\n" "0"
 		result=$(selectItem temp[@]) || break
-		echo "Open http://<ip of this host>:$port/tv.asf network stream in your favorite media player."
+		echo "Open http://<ip of this host>:${FLAGS_port}/tv.asf network stream in your favorite media player."
 		if [ $result -eq 0 ]; then
-			echo "Hit Ctrl+\ and then Ctrl+C to enforce channel switch, Hit Ctrl+C to stop streaming."
+			echo "Hit <Ctrl+\> and then <Ctrl+C> to enforce channel switch. Alternatively hit <Ctrl+C> to stop streaming."
 			trap 'continue' QUIT
 			trap 'break'    INT
 			for((i=0;i<${#temp[@]};i++)); do
@@ -117,6 +122,3 @@ do
 		YesNo 1 || break
 	fi
 done
-
-#-- Finalize
-echo ""
