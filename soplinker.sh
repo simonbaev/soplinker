@@ -19,6 +19,30 @@ SW=$(expr $(tput cols) - 5)
 
 # Functions
 #-----------
+#--
+# colorize stdin according to parameter passed (GREEN, CYAN, BLUE, YELLOW)
+colorize() {
+	bold="0"
+	GREEN="\033[$bold;32m"
+	CYAN="\033[$bold;36m"
+	GRAY="\033[$bold;37m"
+	BLUE="\033[$bold;34m"
+	RED="\033[$bold;31m"
+	YELLOW="\033[$bold;33m"
+	NORMAL="\033[m"
+	color=\$${1:-NORMAL}
+	# activate color passed as argument
+	echo -ne "`eval echo ${color}`"
+	# read stdin (pipe) and print from it:
+	# cat
+	shift; printf "$*"
+	# Note: if instead of reading from the pipe, you wanted to print
+	# the additional parameters of the function, you could do:
+	# shift; echo $*
+	# back to normal (no color)
+	echo -ne "${NORMAL}"
+}
+#--
 selectItem() {
 	declare -a array=("${!1}")
 	if	[ ${#array[@]} -eq 0 ]; then
@@ -72,13 +96,13 @@ if lsof -i :${FLAGS_port} > /dev/null; then
 	exit 20
 fi
 #-- Check for the presence of necessary utils
-isInstalled "html2text"	   || exit 11
-isInstalled "sp-sc-auth"	|| exit 12
-isInstalled "xsltproc"	   || exit 13
-isInstalled "wget"			|| exit 14
-isInstalled "lsof"         || exit 15
+isInstalled "html2text"	  || exit 11
+isInstalled "sp-sc-auth"	 || exit 12
+isInstalled "xsltproc"		|| exit 13
+isInstalled "wget"			 || exit 14
+isInstalled "lsof"          || exit 15
 #-- Check if -a option is specified
-[ ${FLAGS_autoplay} -eq ${FLAGS_TRUE} ] && echo "Info: Option -a (autostart video player) is not yet implemented."
+[ ${FLAGS_autoplay} -eq ${FLAGS_TRUE} ] && echo "$(colorize GREEN 'INFO:') Option -a (autostart video player) is not yet implemented."
 
 # Main loop
 #-----------
@@ -92,7 +116,7 @@ do
 		printf "Select Sopcast link to stream out (hit <Ctrl+C> to quit):\n"
 		temp=($(cat $$))
 		rm -rf $$ > /dev/null
-		printf "%2d. Auto selection (start from the frst to find a good one).\n" "0"
+		printf "%2d. %s\n" "0" "$(colorize YELLOW 'Auto selection (start from the frst to find a good one).')"
 		result=$(selectItem temp[@]) || break
 		echo "Open http://<ip of this host>:${FLAGS_port}/tv.asf network stream in your favorite media player."
 		if [ $result -eq 0 ]; then
