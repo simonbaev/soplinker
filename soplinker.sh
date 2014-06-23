@@ -60,7 +60,8 @@ isInstalled() {
 # Sanity check
 #--------------
 #-- Check for the presence of URL
-if [ $(echo "$@" | awk -F "[ ]*--[ ]*" '{print $2}' | awk '{print NF}') -lt 1 ]; then
+[ ${FLAGS_help} -eq ${FLAGS_TRUE} ] && exit 0
+if [ $# -lt 1 ]; then
 	flags_help
 	exit 10
 fi
