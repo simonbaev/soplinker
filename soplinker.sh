@@ -42,9 +42,9 @@ YesNo() {
 		[ -z ${userConfirm} ] && return ${1}
 		case $userConfirm in
 			yes|YES|y|Y)
-				return 0;;
+			return 0;;
 			no|NO|n|N)
-				return 1;;
+			return 1;;
 		esac
 		echo "Incorrect input, try again..." >&2
 	done
@@ -77,6 +77,8 @@ isInstalled "sp-sc-auth"	|| exit 12
 isInstalled "xsltproc"	   || exit 13
 isInstalled "wget"			|| exit 14
 isInstalled "lsof"         || exit 15
+#-- Check if -a option is specified
+[ ${FLAGS_autoplay} -eq ${FLAGS_TRUE} ] && echo "Info: Option -a (autostart video player) is not yet implemented."
 
 # Main loop
 #-----------
