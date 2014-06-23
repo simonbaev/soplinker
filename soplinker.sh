@@ -82,11 +82,9 @@ isInstalled "lsof"         || exit 15
 
 # Main loop
 #-----------
-trap
 flag=0;
 while [ $flag -eq 0 ]
 do
-	unset pid
 	#-- Retrieve webpage and save it in a temp file
 	wget --no-cache ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text | uniq > $$
 	#-- Let user select a SOP link
@@ -100,7 +98,7 @@ do
 		if [ $result -eq 0 ]; then
 			echo "Hit <Ctrl+\> and then <Ctrl+C> to enforce channel switch. Alternatively hit <Ctrl+C> to stop streaming."
 			trap 'continue' QUIT
-			trap 'break'    INT
+			trap 'echo ""; break'    INT
 			for((i=0;i<${#temp[@]};i++)); do
 				printf "\r%${SW}s\rTrying: [%2d/%2d] %s..." "" "$((i+1))" "${#temp[@]}" "${temp[i]}"
 				if [ ${FLAGS_verbose} -eq ${FLAGS_FALSE} ]; then
