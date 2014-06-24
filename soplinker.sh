@@ -55,7 +55,7 @@ selectItem() {
 			read -p "--> " x >&2
 			[ -z "$x" ] && continue
 			echo ${x} | grep -E '^[0-9]+$' > /dev/null && [ ${x} -ge 0 ] && [ ${x} -le ${#array[@]} ] && echo ${x} && break
-			echo "Error: Incorrect input, try again..." >&2
+			echo "$(colorize RED 'ERROR:') Incorrect input, try again..." >&2
 		done
 	fi
 }
@@ -76,7 +76,7 @@ YesNo() {
 #--
 isInstalled() {
 	which "$1" > /dev/null || {
-		echo "Please install '$1' and re-run the script." 1>&2
+		echo "$(colorize RED 'ERROR:') missing dependence(s). Please install '$1' and re-run the script." 1>&2
 		return 1;
 	}
 	return 0
@@ -92,7 +92,7 @@ fi
 url="$1"
 #-- Check for the availability of the port to be used by sp-sc-auth
 if lsof -i :${FLAGS_port} > /dev/null; then
-	echo "Port '${FLAGS_port}' is in use by '$(lsof -i :${FLAGS_port} | tail -n +2 | awk '{printf "%s (%s)\n",$1,$2}')' process." 1>&2
+	echo "$(colorize RED ERROR:) Port '${FLAGS_port}' is in use by '$(lsof -i :${FLAGS_port} | tail -n +2 | awk '{printf "%s (%s)\n",$1,$2}')' process." 1>&2
 	exit 20
 fi
 #-- Check for the presence of necessary utils
@@ -118,7 +118,7 @@ do
 		rm -rf $$ > /dev/null
 		printf "%2d. %s\n" "0" "$(colorize YELLOW 'Auto selection (start from the frst to find a good one).')"
 		result=$(selectItem temp[@]) || break
-		echo "Open http://<ip of this host>:${FLAGS_port}/tv.asf network stream in your favorite media player."
+		echo "Open $(colorize CYAN "http://<ip of this host>:${FLAGS_port}/tv.asf") network stream in your favorite media player."
 		if [ $result -eq 0 ]; then
 			echo "Hit <Ctrl+\> and then <Ctrl+C> to enforce channel switch. Alternatively hit <Ctrl+C> to stop streaming."
 			trap 'continue' QUIT
