@@ -101,6 +101,7 @@ isInstalled "sp-sc-auth"	 || exit 12
 isInstalled "xsltproc"		|| exit 13
 isInstalled "wget"			 || exit 14
 isInstalled "lsof"          || exit 15
+isInstalled "phantomjs"     || exit 16
 #-- Check if -a option is specified
 [ ${FLAGS_autoplay} -eq ${FLAGS_TRUE} ] && echo "$(colorize GREEN 'INFO:') Option -a (autostart video player) is not yet implemented."
 
@@ -110,7 +111,8 @@ flag=0;
 while [ $flag -eq 0 ]
 do
 	#-- Retrieve webpage and save it in a temp file
-	wget --no-cache ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text | uniq > $$
+	#wget --no-cache ${url} -O- 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text | uniq > $$
+	phantomjs save_page.js "${url}" 2> /dev/null | xsltproc --html minimal.xsl - 2> /dev/null | html2text | uniq > $$
 	#-- Let user select a SOP link
 	if [ $(cat $$ | wc -l) -gt 0 ]; then
 		printf "Select Sopcast link to stream out (hit <Ctrl+C> to quit):\n"
@@ -144,6 +146,6 @@ do
 	else
 		echo "Specified webpage, i.e '$url' doesn't seem to contain sopcast links." 1>&2
 		echo "Would you like to try it again? [y/N]:" 1>&2
-		YesNo 1 || break
+		YesNo 1 || {rm $$; break;}
 	fi
 done
