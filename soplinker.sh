@@ -146,6 +146,6 @@ do
 	else
 		echo "Specified webpage, i.e '$url' doesn't seem to contain sopcast links." 1>&2
 		echo "Would you like to try it again? [y/N]:" 1>&2
-		YesNo 1 || {rm $$; break;}
+		YesNo 1 || { rm $$; break; }
 	fi
 done
